@@ -1,6 +1,7 @@
 from flask import Flask, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_session import Session
+from flask_wtf import  CSRFProtect
 import redis
 
 app = Flask(__name__)
@@ -37,8 +38,10 @@ redis_store = redis.StrictRedis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, 
 # 初始化Session,读取app身上session配置信息哦
 Session(app)
 
+# 对app做保护
+CSRFProtect(app)
 
-@app.route('/')
+@app.route('/',methods=["POST"])
 def HelloWorld():
     # 测试redis存储数据
     redis_store.set("name", "laohuang")

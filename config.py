@@ -1,3 +1,4 @@
+import logging
 import redis
 
 
@@ -20,6 +21,9 @@ class Config(object):
     SESSION_REDIS = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT)
     PERMANENT_SESSION_LIFETIME = 3600 * 24 * 2
 
+    # 默认设置日志等级logging.DEBUG
+    LEVEL = logging.DEBUG
+
 
 # 开发模式的配置信息
 class DevelopConfig(Config):
@@ -29,6 +33,7 @@ class DevelopConfig(Config):
 # 生产模式（线上模式）
 class ProductConfig(Config):
     DEBUG = True
+    LEVEL = logging.ERROR
 
 
 # 测试模式

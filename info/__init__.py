@@ -1,12 +1,14 @@
 import logging
 from logging.handlers import RotatingFileHandler
 
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_session import Session
-from flask_wtf import CSRFProtect
-from config import config_dict
 import redis
+from flask import Flask
+from flask_session import Session
+from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import CSRFProtect
+
+from config import config_dict
+from info.modules.index import index_blue
 
 
 def create_app(config_name):
@@ -32,7 +34,9 @@ def create_app(config_name):
 
     # 对app做保护
     CSRFProtect(app)
-
+    # 注册首页蓝图index_app到app中
+    app.register_blueprint(index_blue)
+    print(app.url_map)
     return app
 # 记录日志信息的方法
 def log_file(LEVEL):

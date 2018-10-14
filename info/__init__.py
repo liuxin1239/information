@@ -11,7 +11,7 @@ from config import config_dict
 
 
 redis_store=None
-db=None
+db = SQLAlchemy()
 
 def create_app(config_name):
     app = Flask(__name__)
@@ -25,7 +25,7 @@ def create_app(config_name):
     log_file(config.LEVEL)
 
     # 创建SQLAlchemy对象,关联appd
-    db = SQLAlchemy()
+
     db.init_app(app)
     # 创建redis对象,关联app
     global redis_store

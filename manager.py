@@ -5,7 +5,7 @@ from info import create_app
 app = create_app("product")
 
 
-@app.route('/', methods=["POST"])
+@app.route('/')
 def HelloWorld():
     # 测试redis存储数据
     # redis_store.set("name", "laohuang")

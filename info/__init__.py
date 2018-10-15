@@ -9,9 +9,9 @@ from flask_wtf import CSRFProtect
 
 from config import config_dict
 
-
-redis_store=None
+redis_store = None
 db = SQLAlchemy()
+
 
 def create_app(config_name):
     app = Flask(__name__)
@@ -37,9 +37,14 @@ def create_app(config_name):
     # 对app做保护
     CSRFProtect(app)
 
-    from info.modules.index import index_blue
     # 注册首页蓝图index_app到app中
+    from info.modules.index import index_blue
     app.register_blueprint(index_blue)
+
+    # 注册认证蓝图passport_blue到app中
+    from info.modules.passport import passport_blue
+    app.register_blueprint(passport_blue)
+
     print(app.url_map)
     return app
 

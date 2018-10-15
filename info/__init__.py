@@ -25,7 +25,6 @@ def create_app(config_name):
     log_file(config.LEVEL)
 
     # 创建SQLAlchemy对象,关联appd
-
     db.init_app(app)
     # 创建redis对象,关联app
     global redis_store
@@ -35,7 +34,7 @@ def create_app(config_name):
     Session(app)
 
     # 对app做保护
-    CSRFProtect(app)
+    # CSRFProtect(app)
 
     # 注册首页蓝图index_app到app中
     from info.modules.index import index_blue

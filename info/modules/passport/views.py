@@ -4,14 +4,74 @@ from flask import current_app
 from flask import make_response
 from flask import request, jsonify
 
-from info import constants
+from info import constants, db
 from info import redis_store
 from info.libs.yuntongxun.sms import CCP
+from info.models import User
 from info.utils.response_code import RET
 from . import passport_blue
 from info.utils.captcha.captcha import captcha
 
 
+# 注册用户
+# 请求路径: /passport/register
+# 请求方式: POST
+# 请求参数: mobile, sms_code,password
+# 返回值: errno, errmsg
+@passport_blue.route('/register', methods=['POST'])
+def register():
+    # 获取参数
+    dict_data = request.json
+    mobile = dict_data.get("mobile")
+    sms_code = dict_data.get("sms_code")
+    password = dict_data.get("password")
+    # 校验参数是否为空
+    if not all([mobile, sms_code, password]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不全")
+    # 手机号格式校验
+    if not re.match("1[35789]\d{9}", mobile):
+        return jsonify(errno=RET.DATAERR, errmsg="手机号格式错误")
+    # 根据手机号,去redis中去除短信验证码
+    try:
+        redis_sms_code = redis_store.get("sms_code:%s" % mobile)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="获取短信验证码异常")
+    # 判断短信验证码时候否过期
+    if not redis_sms_code:
+        return jsonify(errno=RET.NODATA, errmsg="短信验证码已过期")
+    # 删除redis的短信验证码
+    try:
+        redis_store.delete("sms_code:%s" % mobile)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="删除短信验证码异常")
+
+    # 判断传入的短信验证码和redis中取出的是否一致
+
+    if redis_sms_code != sms_code:
+        return jsonify(errno=RET.DATAERR, errmsg="验证码填写有误")
+
+    # 创建用户对象,设置属性
+    user = User()
+    user.nick_name = mobile
+    user.password_hash = password
+    user.mobile = mobile
+
+    # 保存用户到数据库mysql
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="注册失败")
+
+    # 返回响应
+    return jsonify(errno=RET.OK, errmsg="注册成功")
+
+
+# 获取短信验证码
 # 请求路径: /passport/sms_code
 # 请求方式: POST
 # 请求参数: mobile, image_code,image_code_id
@@ -19,7 +79,7 @@ from info.utils.captcha.captcha import captcha
 @passport_blue.route('/sms_code', methods=["POST"])
 def sms_code():
     # 获取参数
-    dict_data=request.json
+    dict_data = request.json
     mobile = dict_data.get("mobile")
     image_code = dict_data.get("image_code")
     image_code_id = dict_data.get("image_code_id")

@@ -3,6 +3,7 @@ import re
 from flask import current_app
 from flask import make_response
 from flask import request, jsonify
+from flask import session
 
 from info import constants, db
 from info import redis_store
@@ -12,6 +13,42 @@ from info.utils.response_code import RET
 from . import passport_blue
 from info.utils.captcha.captcha import captcha
 
+
+# 登录用户
+# 请求路径: /passport/login
+# 请求方式: POST
+# 请求参数: mobile,password
+# 返回值: errno, errmsg
+@passport_blue.route('/login', methods=['POST'])
+def login():
+    # 获取参数
+    dict_data = request.json
+    mobile = dict_data.get("mobile")
+    password = dict_data.get("password")
+
+    # 校验参数是否为空
+    if not all([mobile, password]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不全")
+    # 通过手机号,区数据库查询这个用户对象
+    try:
+        user = User.query.filter(User.mobile == mobile).first()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询用户异常")
+    # 判断用户是否存在
+    if not user:
+        return jsonify(errno=RET.NODATA, errmsg="用户不存在")
+
+    # 校验用户密码是否存在
+    if user.password_hash != password:
+        return jsonify(errno=RET.DBERR, errmsg="密码不正确")
+    # 保存用户密码的登录状态到session
+    session["user_id"]=user.id
+    session["user_name"]=user.nick_name
+    session["mobile"]=user.mobile
+
+    # 返回响应
+    return jsonify(errno=RET.OK, errmsg="登陆成功")
 
 # 注册用户
 # 请求路径: /passport/register

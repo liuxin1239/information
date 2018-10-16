@@ -5,7 +5,11 @@ from . import index_blue
 from info import redis_store
 from flask import render_template,current_app
 
-
+# 首页右上角用户展示
+    # 请求路径: /
+    # 请求方式: GET
+    # 请求参数: 无
+    # 返回值: index.html页面, data数据
 @index_blue.route('/')
 def HelloWorld():
     # 获取用户的编号,从session

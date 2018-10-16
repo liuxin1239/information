@@ -14,6 +14,21 @@ from . import passport_blue
 from info.utils.captcha.captcha import captcha
 
 
+# 退出登陆
+#     请求路径: /passport/logout
+#     请求方式: POST
+#     请求参数: 无
+#     返回值: errno, errmsg
+@passport_blue.route('/logout', methods=['POST'])
+def logout():
+    # 清除session
+    session.pop("user_id", None)
+    session.pop("nick_name", None)
+    session.pop("mobile", None)
+    # 返回响应
+    return jsonify(errno=RET.OK, errmsg="退出成功")
+
+
 # 登录用户
 # 请求路径: /passport/login
 # 请求方式: POST
@@ -43,12 +58,13 @@ def login():
     if user.password_hash != password:
         return jsonify(errno=RET.DBERR, errmsg="密码不正确")
     # 保存用户密码的登录状态到session
-    session["user_id"]=user.id
-    session["user_name"]=user.nick_name
-    session["mobile"]=user.mobile
+    session["user_id"] = user.id
+    session["nick_name"] = user.nick_name
+    session["mobile"] = user.mobile
 
     # 返回响应
     return jsonify(errno=RET.OK, errmsg="登陆成功")
+
 
 # 注册用户
 # 请求路径: /passport/register

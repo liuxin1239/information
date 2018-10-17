@@ -274,7 +274,7 @@ function sendSMSCode() {
         type: 'post',
         data: JSON.stringify(params),
         contentType: 'application/json',
-        // headers:{'X-CSRFToken':getCookie('csrf_token')},
+        headers:{'X-CSRFToken':getCookie('csrf_token')},
 
         success: function (resp) {
 

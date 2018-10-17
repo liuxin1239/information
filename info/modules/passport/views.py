@@ -1,5 +1,7 @@
 import random
 import re
+
+from datetime import datetime
 from flask import current_app
 from flask import make_response
 from flask import request, jsonify
@@ -55,12 +57,15 @@ def login():
         return jsonify(errno=RET.NODATA, errmsg="用户不存在")
 
     # 校验用户密码是否存在
-    if user.password_hash != password:
+    if not user.check_passowrd(password):
         return jsonify(errno=RET.DBERR, errmsg="密码不正确")
     # 保存用户密码的登录状态到session
     session["user_id"] = user.id
     session["nick_name"] = user.nick_name
     session["mobile"] = user.mobile
+
+    # 记录用户最后一次登陆时间
+    user.last_login = datetime.now()
 
     # 返回响应
     return jsonify(errno=RET.OK, errmsg="登陆成功")
@@ -108,8 +113,9 @@ def register():
     # 创建用户对象,设置属性
     user = User()
     user.nick_name = mobile
-    user.password_hash = password
     user.mobile = mobile
+    # user.password_hash = password
+    user.password=password
 
     # 保存用户到数据库mysql
     try:
@@ -162,16 +168,18 @@ def sms_code():
         return jsonify(errno=RET.DATAERR, errnsg="图片验证码填写错误")
     # 生成验证码
     sms_code = "%06d" % random.randint(0, 999999)
-    # 发送短信验证码,调用ccp
-    ccp = CCP()
-    try:
-        result = ccp.send_template_sms(mobile, [sms_code, constants.SMS_CODE_REDIS_EXPIRES / 60], 1)
-    except Exception as e:
-        current_app.logger.error(e)
-        return jsonify(errno=RET.THIRDERR, errmsg="云通讯发送异常")
+    current_app.logger.debug("短信验证码:%s"%sms_code)
 
-    if result == -1:
-        return jsonify(errno=RET.DATAERR, errmsg="短信发送失败")
+    # 发送短信验证码,调用ccp
+    # ccp = CCP()
+    # try:
+    #     result = ccp.send_template_sms(mobile, [sms_code, constants.SMS_CODE_REDIS_EXPIRES / 60], 1)
+    # except Exception as e:
+    #     current_app.logger.error(e)
+    #     return jsonify(errno=RET.THIRDERR, errmsg="云通讯发送异常")
+    #
+    # if result == -1:
+    #     return jsonify(errno=RET.DATAERR, errmsg="短信发送失败")
 
     # 储存短信验证码到redis中
     try:

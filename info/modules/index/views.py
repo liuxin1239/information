@@ -1,5 +1,5 @@
 from flask import session, jsonify
-from info.models import User, News
+from info.models import User, News, Category
 from info.utils.response_code import RET
 from . import index_blue
 from flask import render_template, current_app
@@ -33,11 +33,22 @@ def HelloWorld():
     for news in news_list:
         click_news_list.append(news.to_dict())
 
+    try:
+        categories = Category.query.all()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="分类获取失败")
+    # 将分类对象转成字典
+    category_list = []
+    for category in categories:
+        category_list.append(category.to_dict())
+
     # 将用户信息转成字典
     dict_data = {
         # 如果user存在,返回左边,否则返回右边
         "user_info": user.to_dict() if user else "",
-        "click_news_list": click_news_list
+        "click_news_list": click_news_list,
+        "category_list": category_list
     }
 
     return render_template("news/index.html", data=dict_data)

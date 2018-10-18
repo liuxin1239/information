@@ -2,7 +2,47 @@ from flask import session, jsonify
 from info.models import User, News, Category
 from info.utils.response_code import RET
 from . import index_blue
-from flask import render_template, current_app
+from flask import render_template, current_app, request
+
+
+# 首页新闻列表
+# 请求路径: /newslist
+# 请求方式: GET
+# 请求参数: cid,page,per_page
+# 返回值: data数据
+@index_blue.route('/newslist')
+def new_list():
+    # 获取参数
+    cid = request.args.get("cid")
+    page = request.args.get("page")
+    per_page = request.args.get("per_page")
+    # 参数类型转换
+    try:
+        page = int(page)
+        per_page = int(per_page)
+    except Exception as e:
+        page = 1
+        per_page = 10
+    # 分页查询
+    try:
+        filters =[]
+        if cid != "1":
+            filters.append(News.category_id==cid)
+        paginate = News.query.filter(*filters).order_by(News.create_time.desc()).paginate(page, per_page, False)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="分页获取失败")
+    # 获取分页对象属性,总页数,当前页,当前页对象
+    totalPage = paginate.pages
+    currentPage = paginate.page
+    items = paginate.items
+    # 将当前页列表转化为对象
+    newsList = []
+    for item in items:
+        newsList.append(item.to_dict())
+
+    # 响应
+    return jsonify(errno=RET.OK, errmsg="获取成功",totalPage=totalPage,currentPage=currentPage,newsList=newsList)
 
 
 # 首页右上角用户展示
@@ -11,7 +51,7 @@ from flask import render_template, current_app
 # 请求参数: 无
 # 返回值: index.html页面, data数据
 @index_blue.route('/')
-def HelloWorld():
+def index():
     # 获取用户的编号,从session
     user_id = session.get("user_id")
     # 判断用户是否存在

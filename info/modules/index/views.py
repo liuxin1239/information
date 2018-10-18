@@ -1,5 +1,7 @@
+from flask import g
 from flask import session, jsonify
 from info.models import User, News, Category
+from info.utils.common import user_login_data
 from info.utils.response_code import RET
 from . import index_blue
 from flask import render_template, current_app, request
@@ -51,16 +53,17 @@ def new_list():
 # 请求参数: 无
 # 返回值: index.html页面, data数据
 @index_blue.route('/')
+@user_login_data
 def show_index():
-    # 获取用户的编号,从session
-    user_id = session.get("user_id")
-    # 判断用户是否存在
-    user = None
-    if user_id:
-        try:
-            user = User.query.get(user_id)
-        except Exception as e:
-            current_app.logger.error(e)
+    # # 获取用户的编号,从session
+    # user_id = session.get("user_id")
+    # # 判断用户是否存在
+    # user = None
+    # if user_id:
+    #     try:
+    #         user = User.query.get(user_id)
+    #     except Exception as e:
+    #         current_app.logger.error(e)
 
     try:
         news_list = News.query.order_by(News.clicks.desc()).limit(10).all()
@@ -86,7 +89,7 @@ def show_index():
     # 将用户信息转成字典
     dict_data = {
         # 如果user存在,返回左边,否则返回右边
-        "user_info": user.to_dict() if user else "",
+        "user_info": g.user.to_dict() if g.user else "",
         "click_news_list": click_news_list,
         "category_list": category_list
     }

@@ -51,7 +51,7 @@ def new_list():
 # 请求参数: 无
 # 返回值: index.html页面, data数据
 @index_blue.route('/')
-def index():
+def show_index():
     # 获取用户的编号,从session
     user_id = session.get("user_id")
     # 判断用户是否存在

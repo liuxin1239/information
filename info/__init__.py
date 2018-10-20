@@ -50,7 +50,9 @@ def create_app(config_name):
     # 将过滤器添加到模班列表里
     from info.utils.common import index_class
     app.add_template_filter(index_class, "index_class")
-
+    # 注册个人中心蓝图user_blue到app
+    from info.modules.user import user_blue
+    app.register_blueprint(user_blue)
     # 使用请求钩子after_request对所有的响应进行拦截,做统一的csrf_token的设置
     @app.after_request
     def after_request(resp):

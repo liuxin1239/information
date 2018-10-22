@@ -54,6 +54,9 @@ def create_app(config_name):
     # 注册个人中心蓝图user_blue到app
     from info.modules.user import user_blue
     app.register_blueprint(user_blue)
+    # 注册管理员蓝图admin_blued到app
+    from info.modules.admin import admin_blue
+    app.register_blueprint(admin_blue)
     # 捕捉404页面
     from info.utils.common import user_login_data
     @app.errorhandler(404)

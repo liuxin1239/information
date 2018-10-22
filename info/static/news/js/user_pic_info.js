@@ -21,7 +21,7 @@ $(function () {
                 if (resp.errno == "0") {
                     $(".now_user_pic").attr("src", resp.data.avatar_url)
                     $(".user_center_pic>img", parent.document).attr("src", resp.data.avatar_url)
-                    $(".user_login>img", parent.document).attr("src", resp.data.avatar_url)
+                    $(".lgin_pic", parent.document).attr("src", resp.data.avatar_url)
                     window.location.reload()
                 }else {
                     alert(resp.errmsg)

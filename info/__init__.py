@@ -2,7 +2,8 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 import redis
-from flask import Flask
+from flask import Flask, render_template
+from flask import g
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
@@ -53,6 +54,16 @@ def create_app(config_name):
     # 注册个人中心蓝图user_blue到app
     from info.modules.user import user_blue
     app.register_blueprint(user_blue)
+    # 捕捉404页面
+    from info.utils.common import user_login_data
+    @app.errorhandler(404)
+    @user_login_data
+    def page_not_found(e):
+        data = {
+            "user_info": g.user.to_dict() if g.user else ""
+        }
+        return render_template("news/404.html", data=data)
+
     # 使用请求钩子after_request对所有的响应进行拦截,做统一的csrf_token的设置
     @app.after_request
     def after_request(resp):

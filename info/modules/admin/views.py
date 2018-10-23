@@ -3,6 +3,24 @@ from flask import render_template, request, redirect, current_app, session
 from info.models import User
 from info.utils.common import user_login_data
 from . import admin_blue
+# 用户统计
+# 请求路径: /admin/user_count
+# 请求方式: GET
+# 请求参数: 无
+# 返回值:渲染页面user_count.html,字典数据
+
+@admin_blue.route('/user_count')
+def user_count():
+
+    return render_template("admin/user_count.html")
+
+
+
+
+
+
+
+
 
 
 # 后台主页内容
@@ -13,6 +31,8 @@ from . import admin_blue
 @admin_blue.route('/index')
 @user_login_data
 def admin_index():
+    # if not session.get("is_admin"):
+    #     return redirect("/")
     admin = g.user.to_dict() if g.user else ""
     return render_template("admin/index.html",admin=admin)
 
@@ -26,6 +46,9 @@ def admin_index():
 def admin_login():
     # 判断请求方式是否为GET
     if request.method == "GET":
+        # 判断管理员有没有登陆过,如有重定向到首页
+        if session.get("is_admin"):
+            return redirect("/admin/index")
         return render_template("admin/login.html")
     # 判断请求方式是否为POST
     if request.method == "POST":

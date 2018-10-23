@@ -172,15 +172,15 @@ def sms_code():
     current_app.logger.debug("短信验证码:%s"%sms_code)
 
     # 发送短信验证码,调用ccp
-    # ccp = CCP()
-    # try:
-    #     result = ccp.send_template_sms(mobile, [sms_code, constants.SMS_CODE_REDIS_EXPIRES / 60], 1)
-    # except Exception as e:
-    #     current_app.logger.error(e)
-    #     return jsonify(errno=RET.THIRDERR, errmsg="云通讯发送异常")
-    #
-    # if result == -1:
-    #     return jsonify(errno=RET.DATAERR, errmsg="短信发送失败")
+    ccp = CCP()
+    try:
+        result = ccp.send_template_sms(mobile, [sms_code, constants.SMS_CODE_REDIS_EXPIRES / 60], 1)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.THIRDERR, errmsg="云通讯发送异常")
+
+    if result == -1:
+        return jsonify(errno=RET.DATAERR, errmsg="短信发送失败")
 
     # 储存短信验证码到redis中
     try:

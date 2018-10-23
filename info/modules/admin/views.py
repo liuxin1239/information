@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import g, jsonify
 from flask import render_template, request, redirect, current_app, session
@@ -22,7 +22,7 @@ def user_count():
     except Exception as e:
         current_app.logger.error(e)
 
-    # 查询月活人数
+    # 查询月活人数,time.localtime()查询日历对象
     calender = time.localtime()
     try:
         # 获取本月的1号:零点钟
@@ -40,20 +40,39 @@ def user_count():
     try:
         # 获取本日的1号:零点钟
         day_startime_str = "%d-%d-%d" % (calender.tm_year, calender.tm_mon, calender.tm_mday)
-        day_startime_data = datetime.strptime(day_startime_str, "%Y-%m-%d")
+        day_startime_date = datetime.strptime(day_startime_str, "%Y-%m-%d")
         # 获取此刻时间
-        day_endtime_data = datetime.now()
+        day_endtime_date = datetime.now()
         # 根据时间,查询用户
-        day_count = User.query.filter(User.last_login >= day_startime_data, User.last_login <= day_endtime_data,
+        day_count = User.query.filter(User.last_login >= day_startime_date, User.last_login <= day_endtime_date,
                                       User.is_admin == False).count()
     except Exception as e:
         current_app.logger.error(e)
     # 查询时间段内,活跃人数
+    active_date = []  # 记录活跃日期
+    active_count = []  # 记录活跃人数
+    for i in range(0, 31):
+        # 当天时间A
+        begin_date = day_startime_date - timedelta(days=i)
+        # 当天开始时间的后一天B
+        end_date = day_startime_date - timedelta(days=i - 1)
+        # 添加当天开始时间字符串到活跃日期中
+        active_date.append(begin_date.strftime("%Y-%m-%d"))
+        # 查询时间A到B这一天的注册人数
+        everyday_active_count = User.query.filter(User.is_admin == False, User.last_login >= begin_date,
+                                                  User.last_login <= end_date).count()
+        # 添加当天注册人数到获取数量中
+        active_count.append(everyday_active_count)
+    # 为了方便查看进行反转
+    active_date.reverse()
+    active_count.reverse()
     # 携带数据,渲染页面
     data = {
         "total_count": total_count,
         "month_count": month_count,
-        "day_count": day_count
+        "day_count": day_count,
+        "active_date": active_date,
+        "active_count": active_count
     }
     return render_template("admin/user_count.html", data=data)
 

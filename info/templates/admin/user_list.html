@@ -15,6 +15,12 @@
         </div>
         <div class="pannel">
             <table class="common_table">
+                <tr>
+                    <th>用户名</th>
+                    <th>电话</th>
+                    <th>注册时间</th>
+                    <th>上次登录时间</th>
+                </tr>
                 {% for user in data.user_list %}
                     <tr>
                     <td>{{ user.nick_name }}</td>

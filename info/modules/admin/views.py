@@ -3,12 +3,164 @@ from datetime import datetime, timedelta
 
 from flask import g, jsonify
 from flask import render_template, request, redirect, current_app, session
-from info.models import User, News
+
+from info import constants
+from info.models import User, News, Category
 from info.utils.common import user_login_data
+from info.utils.image_storage import image_storage
 from info.utils.response_code import RET
 from . import admin_blue
 
 
+# 功能描述: 新闻编辑详情
+# 请求路径: /admin/news_edit_detail
+# 请求方式: GET, POST
+# 请求参数: GET, news_id, POST(news_id,title,digest,content,index_image,category_id)
+# 返回值:GET,渲染news_edit_detail.html页面,data字典数据, POST(errno,errmsg)
+@admin_blue.route('/news_edit_detail', methods=['GET', 'POST'])
+def news_edit_detail():
+    """
+       - 1.判断请求方式,如果GET,渲染页面
+       - 1.1 获取参数,新闻编号
+       - 1.2 校验参数
+       - 1.3 根据新闻编号获取新闻对象,并判断是否存在
+       - 1.4 携带新闻数据,渲染页面
+       - 2.如果是POST请求,获取参数
+       - 3.校验参数,为空校验
+         4. 判断新闻对象是否存在
+       - 5.上传图片
+       - 6.判断图片是否上传成功
+       - 7.设置属性到新闻对象
+       - 8.返回响应
+
+       :return:
+       """
+    # - 1.判断请求方式,如果GET,渲染页面
+    if request.method == "GET":
+        # - 1.1 获取参数,新闻编号
+        news_id = request.args.get("news_id")
+
+        # - 1.2 校验参数
+        if not news_id: return jsonify(errno=RET.PARAMERR, errmsg="参数不全")
+
+        # - 1.3 根据新闻编号获取新闻对象,并判断是否存在
+        try:
+            news = News.query.get(news_id)
+        except Exception as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.DBERR, errmsg="新闻获取失败")
+
+        if not news: return jsonify(errno=RET.NODATA, errmsg="新闻不存在")
+
+        # 1.3.1 查询所有的分类信息
+        try:
+            categories = Category.query.all()
+            categories.pop(0)  # 弹出最新
+        except Exception as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.DBERR, errmsg="获取分类失败")
+
+        # - 1.4 携带新闻数据,渲染页面
+        return render_template("admin/news_edit_detail.html", news=news.to_dict(), categories=categories)
+
+    # - 2.如果是POST请求,获取参数
+    news_id = request.form.get("news_id")
+    title = request.form.get("title")
+    digest = request.form.get("digest")
+    content = request.form.get("content")
+    index_image = request.files.get("index_image")
+    category_id = request.form.get("category_id")
+
+    # - 3.校验参数,为空校验
+    if not all([news_id, title, digest, content, index_image, category_id]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不全")
+
+    # - 4. 根据编号,查询新闻对象, 判断新闻对象是否存在
+    try:
+        news = News.query.get(news_id)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="获取新闻失败")
+
+    if not news: return jsonify(errno=RET.NODATA, errmsg="新闻不存在")
+
+    # - 5.上传图片
+    try:
+        image_name = image_storage(index_image.read())
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.THIRDERR, errmsg="七牛云异常")
+
+    # - 6.判断图片是否上传成功
+    if not image_name: return jsonify(errno=RET.DATAERR, errmsg="上传失败")
+
+    # - 7.设置属性到新闻对象
+    news.title = title
+    news.digest = digest
+    news.content = content
+    news.index_image_url = constants.QINIU_DOMIN_PREFIX + image_name
+    news.category_id = category_id
+
+    # - 8.返回响应
+    return jsonify(errno=RET.OK, errmsg="编辑成功")
+
+#功能描述: 新闻编辑列表
+# 请求路径: /admin/news_edit
+# 请求方式: GET
+# 请求参数: GET, p, keywords
+# 返回值:GET,渲染news_edit.html页面,data字典数据
+@admin_blue.route('/news_edit')
+def news_edit():
+    """
+       - 1.获取参数
+       - 2.参数类型转换
+       - 3.分页查询
+       - 4.获取分页对象属性,总页数,当前页,当前页对象列表
+       - 5.对象列表转成,字典列表
+       - 6.拼接数据,渲染页面
+       :return:
+       """
+    # - 1.获取参数
+    page = request.args.get("p", "1")
+    keywords = request.args.get("keywords")
+
+    # - 2.参数类型转换
+    try:
+        page = int(page)
+    except Exception as e:
+        current_app.logger.error(e)
+        page = 1
+
+    # - 3.分页查询,所有新闻都能编辑
+    try:
+
+        # 判断是否填写了搜索关键字
+        filters = []
+        if keywords:
+            filters.append(News.title.contains(keywords))
+
+        paginate = News.query.filter(*filters).order_by(News.create_time.desc()).paginate(page, 10, False)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="获取用户失败")
+
+    # - 4.获取分页对象属性,总页数,当前页,当前页对象列表
+    totalPage = paginate.pages
+    currentPage = paginate.page
+    items = paginate.items
+
+    # - 5.对象列表转成,字典列表
+    news_list = []
+    for news in items:
+        news_list.append(news.to_review_dict())
+
+    # - 6.拼接数据,渲染页面
+    data = {
+        "totalPage": totalPage,
+        "currentPage": currentPage,
+        "news_list": news_list
+    }
+    return render_template("admin/news_edit.html", data=data)
 # 获取/设置新闻审核详情
 # 请求路径: /admin/news_review_detail
 # 请求方式: GET,POST

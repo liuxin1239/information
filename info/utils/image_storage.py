@@ -9,7 +9,7 @@ def image_storage(image_data):
     q = Auth(access_key, secret_key)
 
     #要上传的空间
-    bucket_name = 'info'
+    bucket_name = 'infor'
 
     #上传到七牛后保存的文件名
     #如果不指定,名称由七牛云维护
